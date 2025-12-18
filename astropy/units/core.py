@@ -2022,6 +2022,24 @@ class UnrecognizedUnit(IrreducibleUnit):
     # Explicitly inherit __hash__ from UnitBase to override Python's
     # default behavior of setting __hash__ = None when __eq__ is defined
     __hash__ = UnitBase.__hash__
+def __hash__(self):
+    if self._hash is None:
+        # Decompose to canonical SI base form to ensure
+        # equal units always get the same hash (issue #18560)
+        try:
+            decomposed = self.decompose()
+            parts = ([str(decomposed.scale)] +
+                    [str(base) for base in decomposed.bases] +
+                    [str(power) for power in decomposed.powers])
+            self._hash = hash(tuple(parts))
+        except Exception:
+            # Fallback if decompose fails
+            parts = ([str(self.scale)] +
+                    [str(base) for base in self.bases] +
+                    [str(power) for power in self.powers])
+            self._hash = hash(tuple(parts))
+    return self._hash
+
 
     def __eq__(self, other):
         try:
